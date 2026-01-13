@@ -3,6 +3,7 @@ import random
 import requests
 from bs4 import BeautifulSoup
 from discord import app_commands
+import os
 
 # Intents
 intents = discord.Intents.default()
@@ -105,7 +106,7 @@ async def aitower(interaction: discord.Interaction):
 "challenging",
 "bog",
 "master",
-"og"
+"og",
 "fog",
 "sog",
 "nogs",
@@ -150,7 +151,8 @@ async def aitower(interaction: discord.Interaction):
 "mirage",
 "lost",
 "economy",
-]
+] 
+
     prefix = random.choice(prefixes)
     word_count = random.randint(1, 4)
     chosen_words = random.sample(words, word_count)
@@ -161,4 +163,5 @@ async def aitower(interaction: discord.Interaction):
 
 
 # ---------------- RUN ----------------
-client.run("MTQ2MDM5MzE1NDUzNTYyNDczNA.Gt39-E.zFqcPRtdAOH0pxJ7_rH7KY12-rLz0EDPj-zzwY")
+client.run(os.getenv("DISCORD_TOKEN"))
+
