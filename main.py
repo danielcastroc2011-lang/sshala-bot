@@ -33,7 +33,9 @@ class MyClient(discord.Client):
         self.tree = app_commands.CommandTree(self)
 
     async def setup_hook(self):
-        await self.tree.sync()
+    # Sync commands without touching entry point
+    await self.tree.sync(guild=None)
+
 
 client = MyClient()
 
@@ -260,6 +262,7 @@ async def gameroulette(interaction: discord.Interaction):
 
 # ---------------- RUN ----------------
 client.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
