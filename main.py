@@ -7,26 +7,21 @@ import os
 import threading
 from flask import Flask
 import aiohttp
-# ------------------- Minimal Web Server -------------------
 app = Flask(__name__)
+from discord.ui import View, Button
 
 @app.route("/")
 def home():
-    return "Bot is running!"
+    return "im into the mainframe"
 
 def run_webserver():
-    port = int(os.environ.get("PORT", 5000))  # Render sets this automatically
+    port = int(os.environ.get("PORT", 5000)) 
     app.run(host="0.0.0.0", port=port)
 
-# Run web server in a separate thread so it doesn't block the bot
 threading.Thread(target=run_webserver).start()
 
-# ------------------- Discord Bot -------------------
-
-# Intents
 intents = discord.Intents.default()
 
-# Client
 class MyClient(discord.Client):
     def __init__(self):
         super().__init__(intents=intents)
@@ -41,10 +36,13 @@ client = MyClient()
 
 @client.event
 async def on_ready():
-    activity = discord.Activity(
-        type=discord.ActivityType.playing,
-        name="sshala"
+    activity = discord.Streaming(
+        name="sshala",
+        url="https://cdn.discordapp.com/attachments/1074422699172053023/1460709020229697700/bird.mp4?ex=6967e6c9&is=69669549&hm=9fe76626d6c5348690a7356aa612888a547c46b5d1c6b700de0315cbd9c44e08&"
     )
+    await client.change_presence(activity=activity)
+    print("bird")
+
 
     await client.change_presence(
         status=discord.Status.online,
@@ -53,8 +51,6 @@ async def on_ready():
 
     print("im into the mainframe")
 
-
-# ---------------- COMMANDS ----------------
 
 @client.tree.command(name="die", description="kill him")
 @app_commands.allowed_installs(guilds=True, users=True)
@@ -86,8 +82,6 @@ async def nog(interaction: discord.Interaction):
         "https://cdn.discordapp.com/attachments/1074422699172053023/1460409414388547756/image.png?ex=6966cfc1&is=69657e41&hm=07ef2643ff95f80ccf262d930d4afe5b069d25184334bb3a5f8085235cba1c88&",
     ]
     await interaction.response.send_message(random.choice(options))
-
-# ---------------- TOWER ROULETTE ----------------
 
 @client.tree.command(name="towerroulette", description="gets a random tower and you GOTTA do it")
 @app_commands.allowed_installs(guilds=True, users=True)
@@ -121,8 +115,6 @@ async def towerroulette(interaction: discord.Interaction):
 
     await interaction.followup.send(f"go do {random.choice(picks)} you sucker")
 
-# ---------------- REAL GPT AI ----------------
-
 @client.tree.command(name="aitower", description="best tower names known to man")
 @app_commands.allowed_installs(guilds=True, users=True)
 @app_commands.allowed_contexts(guilds=True, dms=True)
@@ -144,6 +136,7 @@ async def aitower(interaction: discord.Interaction):
         "economy",
         "candy",
         "sandc3",
+        "ToRRA getting cancelled being a SC Citadel, ALMOST SICKENING. Two years of work DESTROYED due to a rule change. Put yourself in this situation: your best friend that you have known for decades since kindergarten to college graduation and beyond, has been battling cancer for six months. You've cried with them, you've laughed with them, but in the end it overtakes them, and they pass away. You are devasted by this, you refuse to believe it, but it gets to you. They're gone forever. Through the grief you become determined, determined to do ANYTHING to find a cure for cancer, and to avenge your friend and the wonderful life they lived with you. You work tirelessly, day and night. You research, you test, you plot, you talk to doubting experts about how you could cure it! Work, sleep, work, sleep... as a med school graduate you know you can do it, for your friend. Your only motivation is to bring justice to cancer, and to the millions it killed. You bring in so much research and after two years of research and work, you're one link away, one link away from saving tens of millions of lives. But then... the World Health Organisation interferes, they email you and say that they've updated their testing and procedure guidelines, and that all of your work is essentially for nothing. But your work was perfectly acceptable beforehand! You stand your ground which was a terrible idea. The CDC sends people to your lab, they knock over beakers, they burn papers, they delete files and they OBLITERATE your lab until NOTHING, no work was left. You worked two years in the hopes of curing cancer and it's all destroyed because of a rule change. You are devastated by this, knowing that two whole years of work and tens of millions of people in the future are gone. You even- you even let down your friend... You go to your room and sob for 30 minutes straight. Give graceful a chance, the rule change happened in the development of the tower. Don't destroy two years of hard work to a rule change",
     ]
 
     prefix = random.choice(prefixes)
@@ -153,116 +146,127 @@ async def aitower(interaction: discord.Interaction):
     name = f"{prefix} " + " ".join(chosen_words)
     await interaction.response.send_message(name)
 
-@client.tree.command(
-    name="towersongroulette",
-    description="Gets a random tower song from any floor"
-)
-async def towersongroulette(interaction: discord.Interaction):
-    await interaction.response.defer()
-
-    CATEGORY_URL = "https://jtoh.fandom.com/wiki/Category:Towers"
-
-    async with aiohttp.ClientSession() as session:
-        # Step 1 ➤ Get tower list
-        async with session.get(CATEGORY_URL) as resp:
-            soup = BeautifulSoup(await resp.text(), "html.parser")
-
-        tower_links = [
-            "https://jtoh.fandom.com" + a["href"]
-            for a in soup.select("a.category-page__member-link")
-            if a.get("href", "").startswith("/wiki/")
-        ]
-
-        if not tower_links:
-            await interaction.followup.send("no tower 😔")
-            return
-
-        random.shuffle(tower_links)
-
-        # Step 2 ➤ Try towers until one has music
-        for tower_url in tower_links[:10]:
-            async with session.get(tower_url) as resp:
-                tower_soup = BeautifulSoup(await resp.text(), "html.parser")
-
-            song_files = []
-
-            # Find soundtrack table
-            for table in tower_soup.select("table.wikitable"):
-                caption = table.find("caption")
-                if not caption or "Soundtrack" not in caption.text:
-                    continue
-
-                for row in table.find_all("tr")[1:]:
-                    for a in row.select("a[href]"):
-                        href = a["href"]
-
-                        if any(ext in href.lower() for ext in (".mp3", ".ogg", ".wav")):
-                            if href.startswith("//"):
-                                href = "https:" + href
-                            elif href.startswith("/"):
-                                href = "https://jtoh.fandom.com" + href
-
-                            song_files.append(href)
-
-            if song_files:
-                song = random.choice(song_files)
-                tower_name = tower_url.split("/")[-1].replace("_", " ")
-                await interaction.followup.send(
-                    f" song **{tower_name}** soundtrack:\n{song}"
-                )
-                return
-
-        await interaction.followup.send("no sng 💀")
 
 @client.event
 async def on_message(message: discord.Message):
-    # ignore yourself
     if message.author.bot:
         return
-
-    # check if bot is mentioned
+    
     if client.user in message.mentions:
         await message.channel.send("shut the fuck up")
-@client.tree.command(
-    name="gameroulette",
-    description="im murdering you you fucker"
+
+@client.tree.command(name="bsl", description="bog sog log")
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True)
+@app_commands.describe(
+    choice="Your choice",
+    opponent="Optional: challenge another player"
 )
-async def gameroulette(interaction: discord.Interaction):
-    await interaction.response.defer()
+@app_commands.choices(choice=[
+    app_commands.Choice(name="bog", value="rock"),
+    app_commands.Choice(name="sog", value="paper"),
+    app_commands.Choice(name="log", value="scissors"),
+])
+async def rps(
+    interaction: discord.Interaction,
+    choice: app_commands.Choice[str],
+    opponent: discord.User | None = None
+):
+    # internal logic stays rock/paper/scissors
+    user_choice = choice.value
 
-    # Roblox Discover API (popular games)
-    url = "https://games.roblox.com/v1/games/list?model.sortToken=&model.gameSetTypeId=100000003&model.sortOrder=Desc&model.universeId=0"
+    display = {
+        "rock": "bog",
+        "paper": "sog",
+        "scissors": "log"
+    }
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
-            if resp.status != 200:
-                await interaction.followup.send("roblox")
-                return
+    def decide(a, b):
+        if a == b:
+            return "tie 😐"
+        if (
+            (a == "rock" and b == "scissors") or
+            (a == "paper" and b == "rock") or
+            (a == "scissors" and b == "paper")
+        ):
+            return "win"
+        return "lose"
 
-            data = await resp.json()
+    # ===== BOT GAME =====
+    if opponent is None or opponent.bot:
+        bot_choice = random.choice(["rock", "paper", "scissors"])
+        result = decide(user_choice, bot_choice)
 
-    games = data.get("games", [])
-    if not games:
-        await interaction.followup.send("no game no bacon no games")
+        msg = {
+            "win": "you won",
+            "lose": "you lost haha",
+            "tie": "no minds think alike"
+        }[result]
+
+        await interaction.response.send_message(
+            f"you chose **{display[user_choice]}**\n"
+            f"i chose **{display[bot_choice]}**\n\n"
+            f"{msg}"
+        )
         return
 
-    game = random.choice(games)
+    # ===== PLAYER VS PLAYER =====
+    class RPSView(View):
+        def __init__(self):
+            super().__init__(timeout=30)
+            self.choice = None
 
-    name = game["name"]
-    place_id = game["placeId"]
-    link = f"https://www.roblox.com/games/{place_id}"
+        async def interaction_check(self, i: discord.Interaction):
+            return i.user.id == opponent.id
+
+        async def finish(self, i: discord.Interaction, pick):
+            self.choice = pick
+            self.stop()
+
+        @discord.ui.button(label="bog", style=discord.ButtonStyle.secondary)
+        async def rock(self, i: discord.Interaction, _):
+            await self.finish(i, "rock")
+
+        @discord.ui.button(label="sog", style=discord.ButtonStyle.secondary)
+        async def paper(self, i: discord.Interaction, _):
+            await self.finish(i, "paper")
+
+        @discord.ui.button(label="log", style=discord.ButtonStyle.secondary)
+        async def scissors(self, i: discord.Interaction, _):
+            await self.finish(i, "scissors")
+
+    view = RPSView()
+
+    await interaction.response.send_message(
+        f"{opponent.mention}, **{interaction.user.name}** wants to play bog sog log\n"
+        f"le chose **{display[user_choice]}**\n"
+        f"choose",
+        view=view
+    )
+
+    await view.wait()
+
+    if view.choice is None:
+        await interaction.followup.send("took too long")
+        return
+
+    result = decide(user_choice, view.choice)
+
+    if result == "win":
+        outcome = f"**{interaction.user.name}** won {opponent.name} sucks"
+    elif result == "lose":
+        outcome = f"**{opponent.name}** won {interaction.user.name} sucks "
+    else:
+        outcome = "no minds think alike"
 
     await interaction.followup.send(
-        f" **Game Roulette**\n"
-        f"go play **{name}**\n{link}"
+        f"**{interaction.user.name}** chose **{display[user_choice]}**\n"
+        f"**{opponent.name}** chose **{display[view.choice]}**\n\n"
+        f"{outcome}"
     )
 
 
-
-
-# ---------------- RUN ----------------
 client.run(os.getenv("DISCORD_TOKEN"))
-
 
 
 
