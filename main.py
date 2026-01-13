@@ -212,11 +212,55 @@ async def towersongroulette(interaction: discord.Interaction):
 
         await interaction.followup.send("no sng 💀")
 
+@client.event
+async def on_message(message: discord.Message):
+    # ignore yourself
+    if message.author.bot:
+        return
+
+    # check if bot is mentioned
+    if client.user in message.mentions:
+        await message.channel.send("shut the fuck up")
+@client.tree.command(
+    name="gameroulette",
+    description="im murdering you you fucker"
+)
+async def gameroulette(interaction: discord.Interaction):
+    await interaction.response.defer()
+
+    # Roblox Discover API (popular games)
+    url = "https://games.roblox.com/v1/games/list?model.sortToken=&model.gameSetTypeId=100000003&model.sortOrder=Desc&model.universeId=0"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            if resp.status != 200:
+                await interaction.followup.send("roblox")
+                return
+
+            data = await resp.json()
+
+    games = data.get("games", [])
+    if not games:
+        await interaction.followup.send("no game no bacon no games")
+        return
+
+    game = random.choice(games)
+
+    name = game["name"]
+    place_id = game["placeId"]
+    link = f"https://www.roblox.com/games/{place_id}"
+
+    await interaction.followup.send(
+        f" **Game Roulette**\n"
+        f"go play **{name}**\n{link}"
+    )
+
 
 
 
 # ---------------- RUN ----------------
 client.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
