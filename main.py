@@ -138,40 +138,75 @@ async def aitower(interaction: discord.Interaction):
     name = f"{prefix} " + " ".join(chosen_words)
     await interaction.response.send_message(name)
 
-@client.tree.command(name="towersongroulette", description="gets a random towers song from any floor")
+@client.tree.command(name="towersongroulette", description="gets a random tower song from any floor")
 async def towersongroulette(interaction: discord.Interaction):
     await interaction.response.defer()
 
-    url = "https://jtoh.fandom.com/wiki/Towers"
+    # Step 1 ➤ get list of towers from the Towers category page
+    main_url = "https://jtoh.fandom.com/wiki/Towers"
     try:
-        response = requests.get(url, timeout=10)
-        soup = BeautifulSoup(response.text, "html.parser")
+        main_resp = requests.get(main_url, timeout=10)
+        main_soup = BeautifulSoup(main_resp.text, "html.parser")
     except Exception as e:
-        await interaction.followup.send(f"Failed to fetch towers: {e}")
+        await interaction.followup.send(f"broke {e}")
         return
 
-    songs = []
+    # Gather tower links
+    tower_links = []
+    for a in main_soup.select("a[href]"):
+        href = a.get("href", "")
+        name = a.text.strip()
+        # valid JToH tower page format
+        if href.startswith("/wiki/Tower_of_") and name:
+            tower_links.append("https://jtoh.fandom.com" + href)
 
-    # The wiki uses tables with class 'wikitable' for towers and floors
-    for table in soup.select("table.wikitable"):
-        for row in table.find_all("tr")[1:]:  # skip header
-            cols = row.find_all("td")
-            if len(cols) < 3:
-                continue
-            tower_name = cols[0].text.strip()
-            floor_name = cols[1].text.strip()
-            song_name = cols[2].text.strip()
-
-            if song_name and song_name.lower() != "none":
-                songs.append(f"{tower_name} - {floor_name}: {song_name}")
-
-    if not songs:
-        await interaction.followup.send("no song")
+    if not tower_links:
+        await interaction.followup.send("no towers found 😔")
         return
 
-    await interaction.followup.send(f"sog in the song:\n{random.choice(songs)}")
+    # Step 2 ➤ pick a random tower and fetch its page
+    chosen_link = random.choice(tower_links)
+    try:
+        tower_resp = requests.get(chosen_link, timeout=10)
+        tower_soup = BeautifulSoup(tower_resp.text, "html.parser")
+    except Exception as e:
+        await interaction.followup.send(f"broke {e}")
+        return
+
+    # Step 3 ➤ extract song files from the Music/Soundtrack table
+    song_files = []
+    # Music tables usually have "Soundtrack" text and URLs for files
+    for table in tower_soup.select("table"):
+        if "Soundtrack" in table.text:
+            for row in table.find_all("tr")[1:]:
+                cols = row.find_all("td")
+                if len(cols) >= 3:
+                    file_cell = cols[2]
+                    # find link to mp3 / file URL
+                    link = file_cell.find("a", href=True)
+                    if link:
+                        url = link["href"]
+                        # many fandom links are relative so ensure full link
+                        if url.startswith("//"):
+                            url = "https:" + url
+                        elif url.startswith("/"):
+                            url = "https://jtoh.fandom.com" + url
+                        song_files.append(url)
+
+    if not song_files:
+        # no soundtrack for this tower
+        await interaction.followup.send(f"no song {chosen_link.split('/')[-1]}")
+        return
+
+    # Step 4 ➤ send a random song
+    chosen_song = random.choice(song_files)
+    await interaction.followup.send(
+        f"song **{chosen_link.split('/')[-1].replace('_', ' ')}**:\n{chosen_song}"
+    )
+
 
 
 # ---------------- RUN ----------------
 client.run(os.getenv("DISCORD_TOKEN"))
+
 
