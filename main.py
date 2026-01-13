@@ -173,17 +173,33 @@ async def towersongroulette(interaction: discord.Interaction):
                 tower_html = await resp.text()
                 tower_soup = BeautifulSoup(tower_html, "html.parser")
 
-            song_links = []
+            song_files = []
 
-            # Step 2 ➤ Find audio/file links
-            for a in tower_soup.select("a[href]"):
-                href = a.get("href", "")
-                if any(ext in href.lower() for ext in [".mp3", ".ogg", ".wav"]):
-                    if href.startswith("//"):
-                        href = "https:" + href
-                    elif href.startswith("/"):
-                        href = "https://jtoh.fandom.com" + href
-                    song_links.append(href)
+# Find the soundtrack table by caption/title
+for table in tower_soup.select("table.wikitable"):
+    caption = table.find("caption")
+    if not caption:
+        continue
+
+    if "Soundtrack" not in caption.text:
+        continue
+
+    # Loop through ALL rows (including Awakening / Watchtower)
+    for row in table.find_all("tr")[1:]:
+        # Find any audio/file link in the row
+        for a in row.select("a[href]"):
+            href = a["href"].lower()
+
+            if any(ext in href for ext in [".mp3", ".ogg", ".wav"]):
+                url = a["href"]
+
+                if url.startswith("//"):
+                    url = "https:" + url
+                elif url.startswith("/"):
+                    url = "https://jtoh.fandom.com" + url
+
+                song_files.append(url)
+
 
             if song_links:
                 song = random.choice(song_links)
@@ -199,6 +215,7 @@ async def towersongroulette(interaction: discord.Interaction):
 
 # ---------------- RUN ----------------
 client.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
