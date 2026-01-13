@@ -3,6 +3,7 @@ import random
 import requests
 from bs4 import BeautifulSoup
 from discord import app_commands
+import os
 
 # Intents
 intents = discord.Intents.default()
@@ -162,4 +163,4 @@ async def aitower(interaction: discord.Interaction):
 
 
 # ---------------- RUN ----------------
-client.run("MTQ2MDM5MzE1NDUzNTYyNDczNA.Gt39-E.zFqcPRtdAOH0pxJ7_rH7KY12-rLz0EDPj-zzwY")
+client.run(os.getenv("DISCORD_TOKEN"))
