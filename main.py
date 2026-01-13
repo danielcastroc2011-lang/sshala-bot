@@ -39,7 +39,18 @@ client = MyClient()
 
 @client.event
 async def on_ready():
+    activity = discord.Activity(
+        type=discord.ActivityType.playing,
+        name="sshala"
+    )
+
+    await client.change_presence(
+        status=discord.Status.online,
+        activity=activity
+    )
+
     print("im into the mainframe")
+
 
 # ---------------- COMMANDS ----------------
 
@@ -152,69 +163,61 @@ async def towersongroulette(interaction: discord.Interaction):
     async with aiohttp.ClientSession() as session:
         # Step 1 ➤ Get tower list
         async with session.get(CATEGORY_URL) as resp:
-            html = await resp.text()
-            soup = BeautifulSoup(html, "html.parser")
+            soup = BeautifulSoup(await resp.text(), "html.parser")
 
-        tower_links = []
-        for a in soup.select("a.category-page__member-link"):
-            href = a.get("href")
-            if href and href.startswith("/wiki/"):
-                tower_links.append("https://jtoh.fandom.com" + href)
+        tower_links = [
+            "https://jtoh.fandom.com" + a["href"]
+            for a in soup.select("a.category-page__member-link")
+            if a.get("href", "").startswith("/wiki/")
+        ]
 
         if not tower_links:
-            await interaction.followup.send("no tower")
+            await interaction.followup.send("no tower 😔")
             return
 
-        # Try multiple towers until one has music
         random.shuffle(tower_links)
 
-        for tower_url in tower_links[:10]:  # avoid infinite loop
+        # Step 2 ➤ Try towers until one has music
+        for tower_url in tower_links[:10]:
             async with session.get(tower_url) as resp:
-                tower_html = await resp.text()
-                tower_soup = BeautifulSoup(tower_html, "html.parser")
+                tower_soup = BeautifulSoup(await resp.text(), "html.parser")
 
             song_files = []
 
-# Find the soundtrack table by caption/title
-for table in tower_soup.select("table.wikitable"):
-    caption = table.find("caption")
-    if not caption:
-        continue
+            # Find soundtrack table
+            for table in tower_soup.select("table.wikitable"):
+                caption = table.find("caption")
+                if not caption or "Soundtrack" not in caption.text:
+                    continue
 
-    if "Soundtrack" not in caption.text:
-        continue
+                for row in table.find_all("tr")[1:]:
+                    for a in row.select("a[href]"):
+                        href = a["href"]
 
-    # Loop through ALL rows (including Awakening / Watchtower)
-    for row in table.find_all("tr")[1:]:
-        # Find any audio/file link in the row
-        for a in row.select("a[href]"):
-            href = a["href"].lower()
+                        if any(ext in href.lower() for ext in (".mp3", ".ogg", ".wav")):
+                            if href.startswith("//"):
+                                href = "https:" + href
+                            elif href.startswith("/"):
+                                href = "https://jtoh.fandom.com" + href
 
-            if any(ext in href for ext in [".mp3", ".ogg", ".wav"]):
-                url = a["href"]
+                            song_files.append(href)
 
-                if url.startswith("//"):
-                    url = "https:" + url
-                elif url.startswith("/"):
-                    url = "https://jtoh.fandom.com" + url
-
-                song_files.append(url)
-
-
-            if song_links:
-                song = random.choice(song_links)
+            if song_files:
+                song = random.choice(song_files)
                 tower_name = tower_url.split("/")[-1].replace("_", " ")
                 await interaction.followup.send(
-                    f" le song **{tower_name}** soundtrack:\n{song}"
+                    f" song **{tower_name}** soundtrack:\n{song}"
                 )
                 return
 
-        await interaction.followup.send("no sng")
+        await interaction.followup.send("no sng 💀")
+
 
 
 
 # ---------------- RUN ----------------
 client.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
