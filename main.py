@@ -138,5 +138,40 @@ async def aitower(interaction: discord.Interaction):
     name = f"{prefix} " + " ".join(chosen_words)
     await interaction.response.send_message(name)
 
+@client.tree.command(name="towersongroulette", description="gets a random towers song from any floor")
+async def towersongroulette(interaction: discord.Interaction):
+    await interaction.response.defer()
+
+    url = "https://jtoh.fandom.com/wiki/Towers"
+    try:
+        response = requests.get(url, timeout=10)
+        soup = BeautifulSoup(response.text, "html.parser")
+    except Exception as e:
+        await interaction.followup.send(f"Failed to fetch towers: {e}")
+        return
+
+    songs = []
+
+    # The wiki uses tables with class 'wikitable' for towers and floors
+    for table in soup.select("table.wikitable"):
+        for row in table.find_all("tr")[1:]:  # skip header
+            cols = row.find_all("td")
+            if len(cols) < 3:
+                continue
+            tower_name = cols[0].text.strip()
+            floor_name = cols[1].text.strip()
+            song_name = cols[2].text.strip()
+
+            if song_name and song_name.lower() != "none":
+                songs.append(f"{tower_name} - {floor_name}: {song_name}")
+
+    if not songs:
+        await interaction.followup.send("no song")
+        return
+
+    await interaction.followup.send(f"sog in the song:\n{random.choice(songs)}")
+
+
 # ---------------- RUN ----------------
 client.run(os.getenv("DISCORD_TOKEN"))
+
