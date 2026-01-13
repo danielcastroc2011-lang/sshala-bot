@@ -4,6 +4,24 @@ import requests
 from bs4 import BeautifulSoup
 from discord import app_commands
 import os
+from flask import Flask
+import threading
+
+# ---------------- WEB SERVER (FOR RENDER FREE TIER) ----------------
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Bot is running"
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
+
+threading.Thread(target=run_web, daemon=True).start()
+
+# ---------------- DISCORD BOT ----------------
 
 # Intents
 intents = discord.Intents.default()
@@ -52,7 +70,7 @@ async def nog(interaction: discord.Interaction):
         "https://cdn.discordapp.com/attachments/1074422699172053023/1460406829577142323/collectmynogs.png",
         "https://cdn.discordapp.com/attachments/1074422699172053023/1460406939698729042/image.png",
         "https://cdn.discordapp.com/attachments/1074422699172053023/1460407110134137013/image.png",
-        "https://cdn.discordapp.com/attachments/1074422699172053023/1460409414388547756/image.png?ex=6966cfc1&is=69657e41&hm=07ef2643ff95f80ccf262d930d4afe5b069d25184334bb3a5f8085235cba1c88&",
+        "https://cdn.discordapp.com/attachments/1074422699172053023/1460409414388547756/image.png",
     ]
     await interaction.response.send_message(random.choice(options))
 
@@ -90,78 +108,8 @@ async def towerroulette(interaction: discord.Interaction):
 
     await interaction.followup.send(f"go do {random.choice(picks)} you sucker")
 
-# ---------------- REAL GPT AI ----------------
+# ---------------- AI TOWER NAME ----------------
 
 @client.tree.command(name="aitower", description="best tower names known to man")
 @app_commands.allowed_installs(guilds=True, users=True)
-@app_commands.allowed_contexts(guilds=True, dms=True)
-async def aitower(interaction: discord.Interaction):
-    prefixes = [
-        "Tower of",
-        "Citadel of",
-        "Steeple of",
-    ]
-
-    words = [
-"challenging",
-"bog",
-"master",
-"og",
-"fog",
-"sog",
-"nogs",
-"intense",
-"skibidi",
-"loser",
-"fucking",
-"sora",
-"bugs",
-"hc",
-"dan",
-"coins",
-"feodoric",
-"skill",
-"cursed",
-"exploding",
-"bullshit",
-"tower",
-"of",
-"in days of yore we had danced, among gods and kings and fools but when mankind moves on, what is there to dance about? growth is brilliance, brilliance is respect, respect is power when i don the cape i too will dance, but not among gods, not among kings, not among fools i will dance, for it shall mean the end of worlds and beyond i will watch the sun go supernova and i will laugh about it till the cosmos is no longer illuminated",
-"golden",
-"obstacles",
-"downfall",
-"bird",
-"fall",
-"nuclear",
-"mystic",
-"nommer",
-"plungophonically",
-"unknown",
-"thanos",
-"city",
-"heights",
-"simple",
-"complex",
-"dynamic",
-"vine",
-"trials",
-"imminent",
-"mind",
-"misleading",
-"mirage",
-"lost",
-"economy",
-] 
-
-    prefix = random.choice(prefixes)
-    word_count = random.randint(1, 4)
-    chosen_words = random.sample(words, word_count)
-
-    name = f"{prefix} " + " ".join(chosen_words)
-    await interaction.response.send_message(name)
-
-
-
-# ---------------- RUN ----------------
-client.run(os.getenv("DISCORD_TOKEN"))
-
+@app_commands.allowed_context
