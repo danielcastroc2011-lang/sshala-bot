@@ -239,7 +239,6 @@ async def rps(
 
     await interaction.response.send_message(
         f"{opponent.mention}, **{interaction.user.name}** wants to play bog sog log\n"
-        f"le chose **{display[user_choice]}**\n"
         f"choose",
         view=view
     )
@@ -267,6 +266,7 @@ async def rps(
 
 
 client.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
