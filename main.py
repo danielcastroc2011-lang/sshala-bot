@@ -264,8 +264,52 @@ async def rps(
         f"{outcome}"
     )
 
+@client.tree.command(name="towerace", description="race someone on a random tower")
+@app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_contexts(guilds=True, dms=True)
+@app_commands.describe(
+    opponent="who"
+)
+async def towerace(interaction: discord.Interaction, opponent: discord.User):
+    await interaction.response.defer()
+
+    url = "https://jtoh.fandom.com/wiki/Towers"
+    response = requests.get(url, timeout=10)
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    picks = []
+
+    for a in soup.select("a[href]"):
+        href = a.get("href")
+        name = a.text.strip()
+
+        if not name:
+            continue
+
+        if (
+            (href.startswith("/wiki/Tower_of_") and name.startswith("Tower of")) or
+            (href.startswith("/wiki/Citadel_of_") and name.startswith("Citadel of")) or
+            (href.startswith("/wiki/Steeple_of_") and name.startswith("Steeple of"))
+        ):
+            picks.append(name)
+
+    if not picks:
+        await interaction.followup.send("brok")
+        return
+
+    tower = random.choice(picks)
+
+    await interaction.followup.send(
+        f"{interaction.user.mention} vs {opponent.mention}\n"
+        f"🏁 **race** 🏁\n\n"
+        f"go do **{tower}**\n"
+        f"first to finish the tower wins"
+    )
+
+
 
 client.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
