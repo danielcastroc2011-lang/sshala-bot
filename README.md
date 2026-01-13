@@ -1,2 +1,0 @@
-# sshala-bot
-yeah
