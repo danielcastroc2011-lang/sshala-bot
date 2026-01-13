@@ -4,6 +4,24 @@ import requests
 from bs4 import BeautifulSoup
 from discord import app_commands
 import os
+import threading
+from flask import Flask
+
+# ------------------- Minimal Web Server -------------------
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Bot is running!"
+
+def run_webserver():
+    port = int(os.environ.get("PORT", 5000))  # Render sets this automatically
+    app.run(host="0.0.0.0", port=port)
+
+# Run web server in a separate thread so it doesn't block the bot
+threading.Thread(target=run_webserver).start()
+
+# ------------------- Discord Bot -------------------
 
 # Intents
 intents = discord.Intents.default()
@@ -103,55 +121,15 @@ async def aitower(interaction: discord.Interaction):
     ]
 
     words = [
-"challenging",
-"bog",
-"master",
-"og",
-"fog",
-"sog",
-"nogs",
-"intense",
-"skibidi",
-"loser",
-"fucking",
-"sora",
-"bugs",
-"hc",
-"dan",
-"coins",
-"feodoric",
-"skill",
-"cursed",
-"exploding",
-"bullshit",
-"tower",
-"of",
-"in days of yore we had danced, among gods and kings and fools but when mankind moves on, what is there to dance about? growth is brilliance, brilliance is respect, respect is power when i don the cape i too will dance, but not among gods, not among kings, not among fools i will dance, for it shall mean the end of worlds and beyond i will watch the sun go supernova and i will laugh about it till the cosmos is no longer illuminated",
-"golden",
-"obstacles",
-"downfall",
-"bird",
-"fall",
-"nuclear",
-"mystic",
-"nommer",
-"plungophonically",
-"unknown",
-"thanos",
-"city",
-"heights",
-"simple",
-"complex",
-"dynamic",
-"vine",
-"trials",
-"imminent",
-"mind",
-"misleading",
-"mirage",
-"lost",
-"economy",
-] 
+        "challenging", "bog", "master", "og", "fog", "sog", "nogs", "intense", "skibidi",
+        "loser", "fucking", "sora", "bugs", "hc", "dan", "coins", "feodoric", "skill",
+        "cursed", "exploding", "bullshit", "tower", "of",
+        "in days of yore we had danced, among gods and kings and fools but when mankind moves on, what is there to dance about? growth is brilliance, brilliance is respect, respect is power when i don the cape i too will dance, but not among gods, not among kings, not among fools i will dance, for it shall mean the end of worlds and beyond i will watch the sun go supernova and i will laugh about it till the cosmos is no longer illuminated",
+        "golden", "obstacles", "downfall", "bird", "fall", "nuclear", "mystic", "nommer",
+        "plungophonically", "unknown", "thanos", "city", "heights", "simple", "complex",
+        "dynamic", "vine", "trials", "imminent", "mind", "misleading", "mirage", "lost",
+        "economy",
+    ]
 
     prefix = random.choice(prefixes)
     word_count = random.randint(1, 4)
@@ -159,8 +137,6 @@ async def aitower(interaction: discord.Interaction):
 
     name = f"{prefix} " + " ".join(chosen_words)
     await interaction.response.send_message(name)
-
-
 
 # ---------------- RUN ----------------
 client.run(os.getenv("DISCORD_TOKEN"))
