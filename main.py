@@ -1,6 +1,5 @@
 import discord
 from discord import app_commands
-from discord.ui import View
 import random
 import os
 import asyncio
@@ -17,10 +16,6 @@ app = Flask(__name__)
 @app.route("/")
 def home():
     return "bot alive"
-
-def run_flask():
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port, debug=False)
 
 # ================== DISCORD ==================
 
@@ -43,10 +38,7 @@ async def on_ready():
         name="sshala",
         url="https://cdn.discordapp.com/attachments/1074422699172053023/1460709020229697700/bird.mp4"
     )
-    await client.change_presence(
-        status=discord.Status.online,
-        activity=activity
-    )
+    await client.change_presence(status=discord.Status.online, activity=activity)
 
 # ================== TOWER CACHE ==================
 
@@ -76,7 +68,7 @@ async def fetch_towers():
     TOWER_CACHE_TIME = time.time()
     return towers
 
-# ================== COMMANDS ==================
+# ================== COMMAND ==================
 
 @client.tree.command(name="towerroulette")
 async def towerroulette(interaction: discord.Interaction):
@@ -91,9 +83,9 @@ async def on_message(message: discord.Message):
     if client.user in message.mentions:
         await message.channel.send("shut the fuck up")
 
-# ================== DISCORD THREAD ==================
+# ================== DISCORD THREAD (IMPORT-SAFE) ==================
 
-def run_discord():
+def start_discord():
     async def runner():
         token = os.getenv("DISCORD_TOKEN")
         if not token:
@@ -111,8 +103,5 @@ def run_discord():
 
     asyncio.run(runner())
 
-# ================== START BOTH ==================
-
-if __name__ == "__main__":
-    threading.Thread(target=run_discord, daemon=True).start()
-    run_flask()
+# 🔥 START DISCORD WHEN MODULE IS IMPORTED
+threading.Thread(target=start_discord, daemon=True).start()
