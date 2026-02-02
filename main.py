@@ -1,21 +1,22 @@
 import discord
-import random
-import os
-import threading
-import aiohttp
-
-from flask import Flask
-from bs4 import BeautifulSoup
 from discord import app_commands
 from discord.ui import View
+import random
+import os
+import asyncio
+import aiohttp
+import time
+import threading
+from flask import Flask
+from bs4 import BeautifulSoup
 
-# ================= FLASK KEEPALIVE =================
+# ================== FLASK (KEEPALIVE) ==================
 
 app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "im into the mainframea"
+    return "alive"
 
 def run_webserver():
     port = int(os.environ.get("PORT", 5000))
@@ -23,10 +24,9 @@ def run_webserver():
 
 threading.Thread(target=run_webserver, daemon=True).start()
 
-# ================= DISCORD CLIENT =================
+# ================== DISCORD CLIENT ==================
 
 intents = discord.Intents.default()
-intents.message_content = True  # REQUIRED for on_message
 
 class MyClient(discord.Client):
     def __init__(self):
@@ -38,7 +38,7 @@ class MyClient(discord.Client):
 
 client = MyClient()
 
-# ================= READY =================
+# ================== STARTUP ==================
 
 @client.event
 async def on_ready():
@@ -46,57 +46,33 @@ async def on_ready():
         name="sshala",
         url="https://cdn.discordapp.com/attachments/1074422699172053023/1460709020229697700/bird.mp4"
     )
+    await client.change_presence(status=discord.Status.online, activity=activity)
+    print("BOT ONLINE")
 
-    await client.change_presence(
-        status=discord.Status.online,
-        activity=activity
-    )
+# ================== TOWER CACHE ==================
 
-    print("im into the mainframe")
-
-# ================= SIMPLE COMMANDS =================
-
-@client.tree.command(name="die", description="kill him")
-async def die(interaction: discord.Interaction):
-    await interaction.response.send_message(
-        "kill him. https://www.roblox.com/users/45152808/profile"
-    )
-
-@client.tree.command(name="sshala", description="me")
-async def sshala(interaction: discord.Interaction):
-    await interaction.response.send_message(
-        "me\nhttps://cdn.discordapp.com/attachments/1074422699172053023/1459562866033299668/Z7j3v6f.png"
-    )
-
-@client.tree.command(name="nog", description="le nog")
-async def nog(interaction: discord.Interaction):
-    options = [
-        "https://cdn.discordapp.com/attachments/1074422699172053023/1460406828872499305/nogs.png",
-        "https://cdn.discordapp.com/attachments/1074422699172053023/1460406829216694312/nogscomplain.png",
-        "no nogs today 😔",
-        "https://cdn.discordapp.com/attachments/1074422699172053023/1460406829577142323/collectmynogs.png",
-        "https://cdn.discordapp.com/attachments/1074422699172053023/1460406939698729042/image.png",
-        "https://cdn.discordapp.com/attachments/1074422699172053023/1460407110134137013/image.png",
-    ]
-    await interaction.response.send_message(random.choice(options))
-
-# ================= ASYNC TOWER FETCH =================
+TOWER_CACHE = []
+TOWER_CACHE_TIME = 0
 
 async def fetch_towers():
-    url = "https://jtoh.fandom.com/wiki/Towers"
+    global TOWER_CACHE, TOWER_CACHE_TIME
 
+    if TOWER_CACHE and time.time() - TOWER_CACHE_TIME < 3600:
+        return TOWER_CACHE
+
+    url = "https://jtoh.fandom.com/wiki/Towers"
     async with aiohttp.ClientSession() as session:
-        async with session.get(url, timeout=10) as resp:
-            html = await resp.text()
+        async with session.get(url, timeout=15) as r:
+            html = await r.text()
 
     soup = BeautifulSoup(html, "html.parser")
-    picks = []
+    towers = []
 
     for a in soup.select("a[href]"):
         href = a.get("href")
         name = a.text.strip()
 
-        if not name:
+        if not href or not name:
             continue
 
         if (
@@ -104,52 +80,87 @@ async def fetch_towers():
             (href.startswith("/wiki/Citadel_of_") and name.startswith("Citadel of")) or
             (href.startswith("/wiki/Steeple_of_") and name.startswith("Steeple of"))
         ):
-            picks.append(name)
+            towers.append(name)
 
-    return picks
+    TOWER_CACHE = towers
+    TOWER_CACHE_TIME = time.time()
+    return towers
 
-# ================= TOWER COMMANDS =================
+# ================== COMMANDS ==================
 
-@client.tree.command(name="towerroulette", description="gets a random tower and you GOTTA do it")
+@client.tree.command(name="die")
+async def die(interaction: discord.Interaction):
+    await interaction.response.send_message(
+        "kill him. https://www.roblox.com/users/45152808/profile"
+    )
+
+@client.tree.command(name="sshala")
+async def sshala(interaction: discord.Interaction):
+    await interaction.response.send_message(
+        "me\nhttps://cdn.discordapp.com/attachments/1074422699172053023/1459562866033299668/Z7j3v6f.png"
+    )
+
+@client.tree.command(name="nog")
+async def nog(interaction: discord.Interaction):
+    options = [
+        "no nogs today 😔",
+        "https://cdn.discordapp.com/attachments/1074422699172053023/1460406828872499305/nogs.png",
+        "https://cdn.discordapp.com/attachments/1074422699172053023/1460406829216694312/nogscomplain.png",
+        "https://cdn.discordapp.com/attachments/1074422699172053023/1460406829577142323/collectmynogs.png",
+    ]
+    await interaction.response.send_message(random.choice(options))
+
+@client.tree.command(name="towerroulette")
 async def towerroulette(interaction: discord.Interaction):
     await interaction.response.defer()
-
     towers = await fetch_towers()
+
     if not towers:
-        await interaction.followup.send("glitched out you poopoo")
+        await interaction.followup.send("broke 💀")
         return
 
-    await interaction.followup.send(f"go do **{random.choice(towers)}** you sucker")
+    await interaction.followup.send(f"go do **{random.choice(towers)}**")
 
-@client.tree.command(name="towerace", description="race someone on a random tower")
-@app_commands.describe(opponent="who")
+@client.tree.command(name="towerace")
 async def towerace(interaction: discord.Interaction, opponent: discord.User):
     await interaction.response.defer()
-
     towers = await fetch_towers()
+
     if not towers:
-        await interaction.followup.send("brok")
+        await interaction.followup.send("broke 💀")
         return
 
     tower = random.choice(towers)
 
     await interaction.followup.send(
         f"{interaction.user.mention} vs {opponent.mention}\n"
-        f"🏁 **race** 🏁\n\n"
+        f"🏁 **RACE** 🏁\n\n"
         f"go do **{tower}**\n"
-        f"first to finish the tower wins"
+        f"first to finish wins"
     )
-
-# ================= ON MESSAGE =================
 
 @client.event
 async def on_message(message: discord.Message):
     if message.author.bot:
         return
-
     if client.user in message.mentions:
         await message.channel.send("shut the fuck up")
 
-# ================= RUN =================
+# ================== SAFE START ==================
 
-client.run(os.getenv("DISCORD_TOKEN"))
+async def main():
+    token = os.getenv("DISCORD_TOKEN")
+    if not token:
+        raise RuntimeError("DISCORD_TOKEN missing")
+
+    while True:
+        try:
+            await client.start(token)
+        except discord.HTTPException as e:
+            if e.status == 429:
+                print("Rate limited. Waiting 10 minutes...")
+                await asyncio.sleep(600)
+            else:
+                raise e
+
+asyncio.run(main())
