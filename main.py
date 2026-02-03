@@ -8,6 +8,8 @@ import time
 import threading
 from flask import Flask
 from bs4 import BeautifulSoup
+import traceback
+import sys
 
 # ================== FLASK ==================
 
@@ -37,7 +39,7 @@ client = MyClient()
 
 @client.event
 async def on_ready():
-    print(f"DISCORD ONLINE AS {client.user}")
+    print(f"DISCORD ONLINE AS {client.user}", flush=True)
     activity = discord.Streaming(
         name="sshala",
         url="https://cdn.discordapp.com/attachments/1074422699172053023/1460709020229697700/bird.mp4"
@@ -92,22 +94,39 @@ async def on_message(message: discord.Message):
 
 def start_discord():
     async def runner():
+        # Do not print the token itself to logs; only indicate presence
         token = os.getenv("DISCORD_TOKEN")
         if not token:
-            raise RuntimeError("DISCORD_TOKEN missing")
+            print("ERROR: DISCORD_TOKEN missing (environment variable not set). Bot will not start.", flush=True)
+            return
+        print("DISCORD_TOKEN present — attempting to start client", flush=True)
 
         while True:
             try:
                 await client.start(token)
             except discord.HTTPException as e:
-                if getattr(e, "status", None) == 429:
-                    print("Rate limited — waiting 10 minutes")
+                # Rate-limited or other HTTP exception
+                status = getattr(e, "status", None)
+                print(f"discord.HTTPException caught: status={status} error={e}", flush=True)
+                traceback.print_exc(file=sys.stdout)
+                if status == 429:
+                    print("Rate limited — waiting 10 minutes", flush=True)
                     await asyncio.sleep(600)
                 else:
-                    raise
+                    # Sleep to avoid tight crash loop, log and retry
+                    await asyncio.sleep(30)
+            except Exception as e:
+                # Log any other exception and back off before retrying
+                print("Exception in Discord runner:", e, flush=True)
+                traceback.print_exc(file=sys.stdout)
+                await asyncio.sleep(30)
 
     # run the async runner in a new event loop
-    asyncio.run(runner())
+    try:
+        asyncio.run(runner())
+    except Exception:
+        print("Fatal exception running asyncio.run in start_discord():", file=sys.stdout)
+        traceback.print_exc(file=sys.stdout)
 
 if __name__ == "__main__":
     # start discord in a background thread so we can run Flask in the main thread
@@ -115,4 +134,5 @@ if __name__ == "__main__":
 
     # Run Flask for keepalive in hosting environments (Heroku / Replit, etc.)
     port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+    # disable the reloader to avoid double-starting threads
+    app.run(host="0.0.0.0", port=port, use_reloader=False)
