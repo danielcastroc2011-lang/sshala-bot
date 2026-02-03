@@ -19,7 +19,11 @@ def home():
 
 # ================== DISCORD ==================
 
+# enable message content intent so on_message and mentions work
 intents = discord.Intents.default()
+intents.messages = True
+intents.message_content = True
+intents.guilds = True
 
 class MyClient(discord.Client):
     def __init__(self):
@@ -80,6 +84,7 @@ async def towerroulette(interaction: discord.Interaction):
 async def on_message(message: discord.Message):
     if message.author.bot:
         return
+    # The message_content intent must be enabled in code and in the bot settings
     if client.user in message.mentions:
         await message.channel.send("shut the fuck up")
 
@@ -95,13 +100,19 @@ def start_discord():
             try:
                 await client.start(token)
             except discord.HTTPException as e:
-                if e.status == 429:
+                if getattr(e, "status", None) == 429:
                     print("Rate limited — waiting 10 minutes")
                     await asyncio.sleep(600)
                 else:
                     raise
 
+    # run the async runner in a new event loop
     asyncio.run(runner())
 
-# 🔥 START DISCORD WHEN MODULE IS IMPORTED
-threading.Thread(target=start_discord, daemon=True).start()
+if __name__ == "__main__":
+    # start discord in a background thread so we can run Flask in the main thread
+    threading.Thread(target=start_discord, daemon=True).start()
+
+    # Run Flask for keepalive in hosting environments (Heroku / Replit, etc.)
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
