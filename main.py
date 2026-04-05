@@ -1,7 +1,6 @@
 import discord
 import random
 import requests
-from bs4 import BeautifulSoup
 from discord import app_commands
 import os
 import threading
@@ -71,25 +70,21 @@ async def nog(interaction: discord.Interaction):
 async def towerroulette(interaction: discord.Interaction):
     await interaction.response.defer()
 
-    url = "https://jtoh.fandom.com/wiki/Towers"
-    response = requests.get(url, timeout=10)
-    soup = BeautifulSoup(response.text, "html.parser")
+    url = "https://jtoh.fandom.com/api.php"
+    params = {
+        "action": "query",
+        "list": "categorymembers",
+        "cmtitle": "Category:Towers",
+        "cmlimit": "500",
+        "format": "json"
+    }
 
-    picks = []
-
-    for a in soup.select("a[href]"):
-        href = a.get("href")
-        name = a.text.strip()
-
-        if not name:
-            continue
-
-        if (
-            (href.startswith("/wiki/Tower_of_") and name.startswith("Tower of")) or
-            (href.startswith("/wiki/Citadel_of_") and name.startswith("Citadel of")) or
-            (href.startswith("/wiki/Steeple_of_") and name.startswith("Steeple of"))
-        ):
-            picks.append(name)
+    try:
+        response = requests.get(url, params=params, timeout=10)
+        data = response.json()
+        picks = [item["title"] for item in data["query"]["categorymembers"]]
+    except:
+        picks = []
 
     if not picks:
         await interaction.followup.send("glitched out you poopoo")
